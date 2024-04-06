@@ -233,12 +233,12 @@ impl<R> std::fmt::Display for Game<R> {
             }
 
             if self.pos.contains(&(i as u8)) {
-                write!(f, "{} ", Piece::O)?;
+                write!(f, "{} ", self.current)?;
                 continue;
             }
 
             match self.board.0.get(i) {
-                Some(Some(p)) => write!(f, "{} ", Piece::O)?,
+                Some(Some(p)) => write!(f, "{} ", p)?,
                 Some(None) => write!(f, ". ")?,
                 _ => panic!("invalid index"),
             }

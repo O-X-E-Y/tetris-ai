@@ -223,7 +223,7 @@ impl std::fmt::Display for Board {
             }
 
             match self.0.get(i) {
-                Some(Some(p)) => write!(f, "{} ", Piece::O)?,
+                Some(Some(p)) => write!(f, "{} ", p)?,
                 Some(None) => write!(f, ". ")?,
                 _ => unreachable!("Index greater than board size"),
             }
