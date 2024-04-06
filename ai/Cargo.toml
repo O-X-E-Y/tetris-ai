@@ -1,0 +1,9 @@
+[package]
+name = "ai"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+game = { path = "../game" }
+time_this = "0"
+arrayvec = "0.7"

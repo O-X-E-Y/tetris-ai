@@ -1,0 +1,32 @@
+[package]
+name = "tetris-ai"
+version = "0.1.0"
+edition = "2021"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[workspace]
+resolver = "2"
+members = [
+    "game",
+    "ai",
+]
+
+[dependencies]
+ai = { path = "./ai" }
+game = { path = "./game" }
+time_this = "0.2.5"
+
+[dev-dependencies]
+criterion = "0.5"
+
+[[bench]]
+name = "ai_benchmark"
+harness = false
+
+# bevy = { version = "0.12.1", features = ["dynamic_linking"] }
+# bevy_svg = { version = "0.12.0", default-features = false, features = ["2d"] }
