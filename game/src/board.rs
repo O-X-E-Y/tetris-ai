@@ -1,4 +1,4 @@
-use crate::{pieces::*, consts::*};
+use crate::{consts::*, pieces::*};
 
 pub const BOARD_SIZE: usize = 220;
 pub const BOARD_SIZE_U8: u8 = BOARD_SIZE as u8;
@@ -6,7 +6,7 @@ pub const BOARD_WIDTH: usize = 10;
 pub const BW: u8 = BOARD_WIDTH as u8;
 
 pub type Pos = u8;
-pub type PiecePos = [Pos; 4];
+pub type PiecePositions = [Pos; 4];
 
 #[derive(Clone, Debug)]
 pub struct Board(pub [Option<Piece>; BOARD_SIZE]);
@@ -23,7 +23,7 @@ impl Board {
     }
 
     #[inline]
-    pub fn try_up(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_up(&self, pos: PiecePositions) -> Option<PiecePositions> {
         for p in pos {
             if p < BW {
                 return None;
@@ -42,7 +42,7 @@ impl Board {
     }
 
     #[inline]
-    pub fn try_down(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_down(&self, pos: PiecePositions) -> Option<PiecePositions> {
         for p in pos {
             if p >= BOARD_SIZE_U8 - BW {
                 return None;
@@ -61,7 +61,7 @@ impl Board {
     }
 
     #[inline]
-    pub fn try_left(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_left(&self, pos: PiecePositions) -> Option<PiecePositions> {
         for p in pos.into_iter().rev() {
             if p % BW == 0 {
                 return None;
@@ -80,7 +80,7 @@ impl Board {
     }
 
     #[inline]
-    pub fn try_right(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_right(&self, pos: PiecePositions) -> Option<PiecePositions> {
         for p in pos.into_iter().rev() {
             if p % BW == BW - 1 {
                 return None;
@@ -99,7 +99,12 @@ impl Board {
     }
 
     #[inline]
-    pub fn try_rot_cw(&self, pos: PiecePos, mut rot: Rotation, piece: Piece) -> Option<(PiecePos, Rotation)> {
+    pub fn try_rot_cw(
+        &self,
+        pos: PiecePositions,
+        mut rot: Rotation,
+        piece: Piece,
+    ) -> Option<(PiecePositions, Rotation)> {
         use Piece::*;
         use Rotation::*;
 
@@ -150,7 +155,12 @@ impl Board {
     }
 
     #[inline]
-    pub fn try_rot_ccw(&self, pos: PiecePos, mut rot: Rotation, piece: Piece) -> Option<(PiecePos, Rotation)> {
+    pub fn try_rot_ccw(
+        &self,
+        pos: PiecePositions,
+        mut rot: Rotation,
+        piece: Piece,
+    ) -> Option<(PiecePositions, Rotation)> {
         use Piece::*;
         use Rotation::*;
 
@@ -217,7 +227,7 @@ impl Board {
 
 impl std::fmt::Display for Board {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for i in 2*BOARD_WIDTH..BOARD_SIZE {
+        for i in 2 * BOARD_WIDTH..BOARD_SIZE {
             if i % BOARD_WIDTH == 0 {
                 writeln!(f)?
             }

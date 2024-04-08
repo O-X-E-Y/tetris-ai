@@ -1,5 +1,7 @@
 mod util;
 
+use std::hint::black_box;
+
 use criterion::{criterion_group, criterion_main, Criterion};
 use util::tetris_ai_with_start_piece;
 
@@ -7,6 +9,19 @@ pub fn bench_search_l(c: &mut Criterion) {
     let ai = tetris_ai_with_start_piece(game::pieces::Piece::L, 1, 19);
 
     c.bench_function("search with L", |b| {
+        b.iter(|| {
+            ai.search();
+        });
+    });
+}
+
+pub fn bench_search_row_l(c: &mut Criterion) {
+    let mut ai = ai::row_ai::RowTetrisAi::<game::rng::ClassicRng>::new(1, 19);
+
+    ai.game.current = game::pieces::Piece::L;
+    ai.game.pos = ai.game.current.row_start_pos();
+
+    c.bench_function("search rows with L", |b| {
         b.iter(|| {
             ai.search();
         });
@@ -30,9 +45,7 @@ pub fn bench_try_left(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try left L", |b| {
-        b.iter(|| {
-            board.board.try_left(board.pos)
-        });
+        b.iter(|| board.board.try_left(board.pos));
     });
 }
 
@@ -43,9 +56,7 @@ pub fn bench_try_right(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try right L", |b| {
-        b.iter(|| {
-            board.board.try_right(board.pos)
-        });
+        b.iter(|| board.board.try_right(board.pos));
     });
 }
 
@@ -57,9 +68,7 @@ pub fn bench_try_rot_cw(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try rotating L clockwise", |b| {
-        b.iter(|| {
-            board.board.try_rot_cw(board.pos, board.rot, piece)
-        });
+        b.iter(|| board.board.try_rot_cw(board.pos, board.rot, piece));
     });
 }
 
@@ -71,9 +80,7 @@ pub fn bench_try_rot_ccw(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try rotating L counter clockwise", |b| {
-        b.iter(|| {
-            board.board.try_rot_ccw(board.pos, board.rot, piece)
-        });
+        b.iter(|| board.board.try_rot_ccw(board.pos, board.rot, piece));
     });
 }
 
@@ -81,11 +88,94 @@ pub fn bench_find_best_move(c: &mut Criterion) {
     let mut ai = ai::TetrisAi::<game::rng::ClassicRng>::new(10, 19);
 
     c.bench_function("find best move in empty board", |b| {
-        b.iter(|| {
-            ai.find_best_move()
-        });
+        b.iter(|| ai.find_best_move());
     });
 }
 
-criterion_group!(benches, bench_find_best_move);
+pub fn bench_try_up(c: &mut Criterion) {
+    let board = game::board::Board::new();
+    let pos = [63, 64, 65, 75];
+
+    c.bench_function("try up on naive board", |b| {
+        b.iter(|| board.try_up(black_box(pos)));
+    });
+}
+
+pub fn bench_try_up_rows(c: &mut Criterion) {
+    let board = game::row_board::RowBoard::new();
+
+    let pos = game::row_board::PiecePos {
+        x: 6,
+        y: 6,
+        masks: [
+            0b0000000000000000,
+            0b0000001110000000,
+            0b0000000010000000,
+            0b0000000000000000,
+        ],
+    };
+
+    c.bench_function("try up on row board", |b| {
+        b.iter(|| board.try_up(black_box(pos)));
+    });
+}
+
+pub fn bench_try_down_rows(c: &mut Criterion) {
+    let board = game::row_board::RowBoard::new();
+
+    let pos = game::row_board::PiecePos {
+        x: 6,
+        y: 6,
+        masks: [
+            0b0000000000000000,
+            0b0000001110000000,
+            0b0000000010000000,
+            0b0000000000000000,
+        ],
+    };
+
+    c.bench_function("try down on row board", |b| {
+        b.iter(|| board.try_down(black_box(pos)));
+    });
+}
+
+pub fn bench_try_left_rows(c: &mut Criterion) {
+    let board = game::row_board::RowBoard::new();
+
+    let pos = game::row_board::PiecePos {
+        x: 6,
+        y: 6,
+        masks: [
+            0b0000000000000000,
+            0b0000001110000000,
+            0b0000000010000000,
+            0b0000000000000000,
+        ],
+    };
+
+    c.bench_function("try left on row board", |b| {
+        b.iter(|| board.try_left(black_box(pos)));
+    });
+}
+
+pub fn bench_try_right_rows(c: &mut Criterion) {
+    let board = game::row_board::RowBoard::new();
+
+    let pos = game::row_board::PiecePos {
+        x: 6,
+        y: 6,
+        masks: [
+            0b0000000000000000,
+            0b0000001110000000,
+            0b0000000010000000,
+            0b0000000000000000,
+        ],
+    };
+
+    c.bench_function("try right on row board", |b| {
+        b.iter(|| board.try_right(black_box(pos)));
+    });
+}
+
+criterion_group!(benches, bench_search_row_l);
 criterion_main!(benches);

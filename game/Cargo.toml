@@ -5,4 +5,3 @@ edition = "2021"
 
 [dependencies]
 nanorand = "0.7"
-bitvec = "1.0"

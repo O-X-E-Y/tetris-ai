@@ -1,7 +1,7 @@
-use crate::PiecePos;
+use crate::PiecePositions;
 
 #[inline(always)]
-pub const fn apply_mask(pos: PiecePos, mask: i64) -> PiecePos {
+pub const fn apply_mask(pos: PiecePositions, mask: i64) -> PiecePositions {
     let u = i32::from_le_bytes(pos) as i64;
     let new = u + mask;
     u32::to_le_bytes(new as u32)
@@ -81,25 +81,20 @@ mod tests {
         let cw = [
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 18, p2 - 9, p3, p4 + 9], "I_Right_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 18, p2 + 9, p3, p4 - 9], "I_Down_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 10, p2 - 10, p3 - 1, p4 + 1], "L_Right"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 2, p2 + 9, p3, p4 - 9], "L_Down"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 1, p2 + 1, p3 + 10, p4 + 10], "L_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 9, p2, p3 - 9, p4 - 2], "L_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 9, p2, p3 + 9, p4 - 2], "J_Right"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 1, p2 - 1, p3 - 9, p4 - 9], "J_Down"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 1, p2 - 8, p3 - 1, p4 + 10], "J_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 9, p2 + 9, p3 + 1, p4 + 1], "J_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 9, p2 - 1, p3 - 1, p4], "T_Right"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1, p2, p3, p4 - 9], "T_Down"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1, p2 + 1, p3 + 1, p4 + 9], "T_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 9, p2, p3, p4], "T_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 10, p2 - 1, p3 - 8, p4 + 1], "S_Right_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 10, p2 + 1, p3 + 8, p4 - 1], "S_Down_Up"),
-            
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 8, p2, p3 - 9, p4 - 1], "Z_Right_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 8, p2, p3 + 9, p4 + 1], "Z_Down_Up"),
         ];
@@ -114,7 +109,10 @@ mod tests {
             let diff = base_u32.abs_diff(new_u32);
             let op = if new_u32 < base_u32 { "-" } else { "" };
 
-            println!("pub const {}_CW: i64 = {op}{diff};", apply_to.to_uppercase())
+            println!(
+                "pub const {}_CW: i64 = {op}{diff};",
+                apply_to.to_uppercase()
+            )
         }
     }
 
@@ -123,25 +121,20 @@ mod tests {
         let ccw = [
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 18, p2 - 9, p3, p4 + 9], "I_Right_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 18, p2 + 9, p3, p4 - 9], "I_Down_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 9, p2, p3 + 9, p4 + 2], "L_Right"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 10, p2 + 10, p3 + 1, p4 - 1], "L_Down"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 2, p2 - 9, p3, p4 + 9], "L_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 1, p2 - 1, p3 - 10, p4 - 10], "L_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 9, p2 - 9, p3 - 1, p4 - 1], "J_Right"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 9, p2, p3 - 9, p4 + 2], "J_Down"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 1, p2 + 1, p3 + 9, p4 + 9], "J_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 1, p2 + 8, p3 + 1, p4 - 10], "J_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 9, p2, p3, p4], "T_Right"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 9, p2 + 1, p3 + 1, p4], "T_Down"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1, p2, p3, p4 + 9], "T_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1, p2 - 1, p3 - 1, p4 - 9], "T_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 10, p2 - 1, p3 - 8, p4 + 1], "S_Right_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 10, p2 + 1, p3 + 8, p4 - 1], "S_Down_Up"),
-
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 - 8, p2, p3 - 9, p4 - 1], "Z_Right_Left"),
             |[p1, p2, p3, p4]: [u8; 4]| ([p1 + 8, p2, p3 + 9, p4 + 1], "Z_Down_Up"),
         ];
@@ -156,7 +149,10 @@ mod tests {
             let diff = base_u32.abs_diff(new_u32);
             let op = if new_u32 < base_u32 { "-" } else { "" };
 
-            println!("pub const {}_CCW: i64 = {op}{diff};", apply_to.to_uppercase())
+            println!(
+                "pub const {}_CCW: i64 = {op}{diff};",
+                apply_to.to_uppercase()
+            )
 
             // println!("new bytes: {new:?}, old u32: {base_u32}, new_u32: {new_u32}, abs difference: {diff}");
         }
@@ -189,9 +185,7 @@ mod tests {
     fn start_pos() {
         for piece in crate::Piece::PIECES {
             let mut pos = piece.positions(crate::Rotation::Right);
-            pos
-                .iter_mut()
-                .for_each(|v| *v += piece.starting_pos());
+            pos.iter_mut().for_each(|v| *v += piece.starting_pos());
 
             println!("pub const START_POS_{piece:?}: PiecePos = {pos:?};")
         }

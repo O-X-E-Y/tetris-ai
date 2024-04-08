@@ -1,12 +1,44 @@
 use std::collections::HashSet;
 
 use ai::TetrisAi;
-use game::{board::*, pieces::Piece, rng::*, Game};
+use game::{board::*, pieces::Piece, rng::*, Game, row_board::{RowBoard, PiecePos as PP}};
 
 fn main() {
     // piece_rot();
 
-    play();
+    // play();
+
+    // let mut b = RowBoard::new();
+    // let pos = Piece::T.row_start_pos();
+    // let pos = b.try_left(pos).unwrap();
+    // let pos = b.try_left(pos).unwrap();
+    // let (pos, rot) = b.try_rot_ccw(pos, Piece::T, game::pieces::Rotation::Right).unwrap();
+    // let pos = b.try_left(pos).unwrap();
+    // // let pos = b.try_left(pos).unwrap();
+    // // let pos = b.try_left(pos).unwrap();
+    // // let pos = b.try_left(pos).unwrap();
+    // // let pos = b.try_left(pos).unwrap();
+    // println!("{pos:?}");
+    // // println!("{b}");
+    // // b.lock(pos);
+    // println!("{b}");
+
+    let mut g = game::RowGame::<ClassicRng>::new(1);
+    println!("{g}");
+
+    g.down().unwrap();
+    g.left().unwrap();
+    g.left().unwrap();
+    g.right().unwrap();
+    g.left().unwrap();
+    
+    println!("{g}");
+
+    g.rot_ccw().unwrap();
+    g.rot_cw();
+
+    println!("{g}");
+
 }
 
 pub fn play() {
@@ -30,9 +62,9 @@ pub fn play() {
                 println!("chosen board:\n{}\nscore: {}", ai.game.board, score);
 
                 ai.game.lock();
-                
+
                 let _ = stdin.read_line(&mut String::new());
-            },
+            }
             None => panic!("no possible moves found! board:\n{}", ai.game.board),
         }
     }
@@ -130,7 +162,7 @@ pub fn piece_rot() {
     g.rot_cw();
     g.rot_cw();
     g.drop();
-    
+
     g.down();
     g.down();
 
@@ -159,7 +191,7 @@ pub fn piece_rot() {
     println!("{g}");
 
     // g.rot_ccw();
-    
+
     // g.right();
     // g.right();
     // g.right();
@@ -191,7 +223,7 @@ pub fn piece_rot() {
     // g.left();
 
     // println!("{g}");
-    
+
     let mut ai = ai::TetrisAi::from_game(g, 3);
 
     let score = ai.eval();

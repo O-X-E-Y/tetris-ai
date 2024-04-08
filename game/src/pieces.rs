@@ -1,6 +1,6 @@
 use nanorand::{Rng, WyRand};
 
-use crate::{board::Pos, PiecePos};
+use crate::{board::Pos, PiecePositions};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Rotation {
@@ -13,6 +13,24 @@ pub enum Rotation {
 use Rotation as R;
 
 impl Rotation {
+    pub const fn as_cw(self) -> Self {
+        match self {
+            R::Right => R::Down,
+            R::Down =>  R::Left,
+            R::Left => R::Up,
+            R::Up => R::Right,
+        }
+    }
+
+    pub const fn as_ccw(self) -> Self {
+        match self {
+            R::Right => R::Up,
+            R::Down => R::Right,
+            R::Left => R::Down,
+            R::Up => R::Left,
+        }
+    }
+
     pub fn cw(&mut self) {
         match self {
             R::Right => *self = R::Down,
@@ -95,13 +113,13 @@ impl Piece {
         Self::Z,
     ];
 
-    pub const START_POS_I: PiecePos = [23, 24, 25, 26];
-    pub const START_POS_L: PiecePos = [24, 25, 26, 34];
-    pub const START_POS_J: PiecePos = [24, 25, 26, 36];
-    pub const START_POS_O: PiecePos = [24, 25, 34, 35];
-    pub const START_POS_T: PiecePos = [24, 25, 26, 35];
-    pub const START_POS_S: PiecePos = [25, 26, 34, 35];
-    pub const START_POS_Z: PiecePos = [24, 25, 35, 36];
+    pub const START_POS_I: PiecePositions = [23, 24, 25, 26];
+    pub const START_POS_L: PiecePositions = [24, 25, 26, 34];
+    pub const START_POS_J: PiecePositions = [24, 25, 26, 36];
+    pub const START_POS_O: PiecePositions = [24, 25, 34, 35];
+    pub const START_POS_T: PiecePositions = [24, 25, 26, 35];
+    pub const START_POS_S: PiecePositions = [25, 26, 34, 35];
+    pub const START_POS_Z: PiecePositions = [24, 25, 35, 36];
 
     pub fn random() -> Self {
         let mut rng = WyRand::new();
@@ -109,7 +127,7 @@ impl Piece {
         Self::PIECES[rng.generate_range(0..7)]
     }
 
-    pub const fn start_pos(&self) -> PiecePos {
+    pub const fn start_pos(&self) -> PiecePositions {
         match self {
             Piece::I => Self::START_POS_I,
             Piece::L => Self::START_POS_L,
@@ -119,6 +137,21 @@ impl Piece {
             Piece::S => Self::START_POS_S,
             Piece::Z => Self::START_POS_Z,
         }
+    }
+
+    pub const fn row_start_pos(&self) -> crate::row_board::PiecePos {
+        let (x, y, mask) = match self {
+            Piece::I => (3, 3, crate::consts_row::I_RIGHT_LEFT[3]),
+            Piece::L => (4, 3, crate::consts_row::L_RIGHT[4]),
+            Piece::J => (4, 3, crate::consts_row::J_RIGHT[4]),
+            Piece::O => (4, 3, crate::consts_row::O_ALL[4]),
+            Piece::T => (4, 3, crate::consts_row::T_RIGHT[4]),
+            Piece::S => (4, 3, crate::consts_row::S_RIGHT_LEFT[4]),
+            Piece::Z => (4, 3, crate::consts_row::Z_RIGHT_LEFT[4]),
+        };
+
+        crate::row_board::PiecePos::new(x, y, [0, 0, 0, 0])
+            .with_u64_mask(mask)
     }
 
     pub fn starting_pos(&self) -> Pos {
@@ -190,7 +223,7 @@ impl Piece {
     //     unsafe { std::mem::transmute::<&[([(i8, i8); 4], Rotation)], &[(PiecePos, Rotation)]>(thing) }
     // }
 
-    pub const fn positions(&self, rotation: Rotation) -> PiecePos {
+    pub const fn positions(&self, rotation: Rotation) -> PiecePositions {
         use Piece::*;
         use Rotation::*;
 

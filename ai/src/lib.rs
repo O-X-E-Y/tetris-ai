@@ -1,12 +1,19 @@
+pub mod row_ai;
+
 use arrayvec::ArrayVec;
 
-use game::{board::*, pieces::{Piece, Rotation}, rng::*, Frames, Game, Level};
+use game::{
+    board::*,
+    pieces::{Piece, Rotation},
+    rng::*,
+    Frames, Game, Level,
+};
 
 #[derive(Debug, Clone)]
 pub struct TetrisAi<R> {
     pub game: Game<R>,
     pub input_speed: Frames,
-    pub highest_blocks: [u8; BOARD_WIDTH]
+    pub highest_blocks: [u8; BOARD_WIDTH],
 }
 
 impl<R> TetrisAi<R> {
@@ -17,11 +24,11 @@ impl<R> TetrisAi<R> {
         Self {
             game,
             input_speed,
-            highest_blocks
+            highest_blocks,
         }
     }
 
-    pub fn find_best_move(&mut self) -> Option<(PiecePos, u32)> {
+    pub fn find_best_move(&mut self) -> Option<(PiecePositions, u32)> {
         let positions = self.search();
         let mut best_score = u32::MAX;
         let mut best_pos = None;
@@ -89,21 +96,26 @@ impl<R> TetrisAi<R> {
         flatness + hole_score.saturating_pow(2) * 1000
     }
 
-    pub fn search(&self) -> ArrayVec<PiecePos, 100> {
+    pub fn search(&self) -> ArrayVec<PiecePositions, 100> {
         let mut final_states = ArrayVec::new();
         let mut searched_states = [0u8; BOARD_SIZE];
 
-        self.search_helper(self.game.pos, self.game.rot, &mut searched_states, &mut final_states);
+        self.search_helper(
+            self.game.pos,
+            self.game.rot,
+            &mut searched_states,
+            &mut final_states,
+        );
 
         final_states
     }
 
     fn search_helper(
         &self,
-        pos: PiecePos,
+        pos: PiecePositions,
         rot: Rotation,
         searched_states: &mut [u8; BOARD_SIZE],
-        final_states: &mut ArrayVec<PiecePos, 100>,
+        final_states: &mut ArrayVec<PiecePositions, 100>,
     ) {
         use Piece::*;
 
@@ -123,8 +135,8 @@ impl<R> TetrisAi<R> {
 
         match self.game.current {
             I | S | Z => self.search_only_cw(pos, rot, searched_states, final_states),
-            L | J  | T=> self.search_cw_ccw(pos, rot, searched_states, final_states),
-            O => {},
+            L | J | T => self.search_cw_ccw(pos, rot, searched_states, final_states),
+            O => {}
         }
 
         match self.game.board.try_down(pos) {
@@ -132,9 +144,7 @@ impl<R> TetrisAi<R> {
                 searched_states[new_pos[0] as usize] |= rot as u8;
                 self.search_helper(new_pos, rot, searched_states, final_states)
             }
-            None => {
-                final_states.push(pos)
-            }
+            None => final_states.push(pos),
             _ => {}
         }
     }
@@ -142,10 +152,10 @@ impl<R> TetrisAi<R> {
     #[inline]
     fn search_only_cw(
         &self,
-        pos: PiecePos,
+        pos: PiecePositions,
         rot: Rotation,
         searched_states: &mut [u8; BOARD_SIZE],
-        final_states: &mut ArrayVec<PiecePos, 100>,
+        final_states: &mut ArrayVec<PiecePositions, 100>,
     ) {
         if let Some((new_pos, new_rot)) = self.game.board.try_rot_cw(pos, rot, self.game.current) {
             if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
@@ -158,10 +168,10 @@ impl<R> TetrisAi<R> {
     #[inline]
     fn search_cw_ccw(
         &self,
-        pos: PiecePos,
+        pos: PiecePositions,
         rot: Rotation,
         searched_states: &mut [u8; BOARD_SIZE],
-        final_states: &mut ArrayVec<PiecePos, 100>,
+        final_states: &mut ArrayVec<PiecePositions, 100>,
     ) {
         if let Some((new_pos, new_rot)) = self.game.board.try_rot_cw(pos, rot, self.game.current) {
             if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
@@ -184,11 +194,15 @@ impl<R: Rng> TetrisAi<R> {
         Self {
             game: Game::new(level),
             input_speed: input_speed.into(),
-            highest_blocks: [BOARD_SIZE_U8; BOARD_WIDTH]
+            highest_blocks: [BOARD_SIZE_U8; BOARD_WIDTH],
         }
     }
 
-    pub fn from_board(board: Board, input_speed: impl Into<Frames>, level: impl Into<Level>) -> Self {
+    pub fn from_board(
+        board: Board,
+        input_speed: impl Into<Frames>,
+        level: impl Into<Level>,
+    ) -> Self {
         let highest_pieces = board.find_highest_blocks();
 
         Self {
