@@ -345,30 +345,30 @@ impl<R: Rng> RowGame<R> {
         }
     }
 
-    pub fn rot_cw(&mut self) -> Option<(PiecePos, Rotation)> {
+    pub fn rot_cw(&mut self) -> Option<PiecePos> {
         match self.board.try_rot_cw(self.pos) {
-            Some((pos, rot)) => {
+            Some(pos) => {
                 self.pos = pos;
 
-                Some((pos, rot))
+                Some(pos)
             }
             None => None,
         }
     }
 
-    pub fn rot_ccw(&mut self) -> Option<(PiecePos, Rotation)> {
+    pub fn rot_ccw(&mut self) -> Option<PiecePos> {
         match self.board.try_rot_ccw(self.pos) {
-            Some((pos, rot)) => {
+            Some(pos) => {
                 self.pos = pos;
 
-                Some((pos, rot))
+                Some(pos)
             }
             None => None,
         }
     }
 
     fn lock(&mut self) {
-        let masks = self.pos.get_masks().unwrap();
+        let masks = self.pos.get_masks();
         masks.into_iter().enumerate().for_each(|(i, m)|
             self.board.0[self.pos.y as usize + i] |= m
         );
@@ -397,8 +397,7 @@ impl<R> std::fmt::Display for RowGame<R> {
         let cmp = 0b1000000000000000;
         let masks = self
             .pos
-            .get_masks()
-            .unwrap_or_else(|| panic!("pos has no mask: {:?}", self.pos));
+            .get_masks();
 
         let mut piece_board = [0u16; BOARD_HEIGHT];
         for i in 0..4 {

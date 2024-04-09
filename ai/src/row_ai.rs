@@ -33,10 +33,7 @@ impl<R> RowTetrisAi<R> {
 
         for pos in positions {
             self.game.pos = pos;
-            let masks = match pos.get_masks() {
-                Some(m) => m,
-                None => panic!("couldn't find mask for pos {pos:?}"),
-            };
+            let masks = pos.get_masks();
 
             let highest_blocks_old = self.highest_blocks;
 
@@ -173,7 +170,7 @@ impl<R> RowTetrisAi<R> {
         searched_states: &mut [u8; BOARD_HEIGHT * 10],
         final_states: &mut ArrayVec<PiecePos, 100>,
     ) {
-        if let Some((new_pos, _)) = self.game.board.try_rot_cw(pos) {
+        if let Some(new_pos) = self.game.board.try_rot_cw(pos) {
             let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
             if searched_i < searched_states.len()
                 && searched_states[searched_i] & new_pos.rot as u8 == 0
@@ -191,7 +188,7 @@ impl<R> RowTetrisAi<R> {
         searched_states: &mut [u8; BOARD_HEIGHT * 10],
         final_states: &mut ArrayVec<PiecePos, 100>,
     ) {
-        if let Some((new_pos, _)) = self.game.board.try_rot_cw(pos) {
+        if let Some(new_pos) = self.game.board.try_rot_cw(pos) {
             let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
             if searched_i < searched_states.len()
                 && searched_states[searched_i] & new_pos.rot as u8 == 0
@@ -201,7 +198,7 @@ impl<R> RowTetrisAi<R> {
             }
         }
 
-        if let Some((new_pos, _)) = self.game.board.try_rot_ccw(pos) {
+        if let Some(new_pos) = self.game.board.try_rot_ccw(pos) {
             let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
             if searched_i < searched_states.len()
                 && searched_states[searched_i] & new_pos.rot as u8 == 0
@@ -235,4 +232,13 @@ impl<R: Rng> RowTetrisAi<R> {
             highest_blocks: highest_pieces,
         }
     }
+}
+
+#[test]
+fn search_l() {
+    let mut ai = RowTetrisAi::<game::rng::ClassicRng>::new(1, 19);
+
+    ai.game.pos = game::pieces::Piece::L.row_start_pos();
+
+    ai.search();
 }

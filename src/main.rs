@@ -48,7 +48,7 @@ pub fn piece_rot() {
     let mut g = game::RowGame::<OrderedRng>::new(19);
 
     println!("{:?}", g.pos);
-    for m in g.pos.get_masks().unwrap() {
+    for m in g.pos.get_masks() {
         println!("{m:b}");
     }
     println!("{g}");
@@ -240,7 +240,7 @@ pub fn piece_rot() {
 
         let highest_blocks_old = ai.highest_blocks;
 
-        let masks = ai.game.pos.get_masks().unwrap();
+        let masks = ai.game.pos.get_masks();
         masks.into_iter().enumerate().for_each(|(i, m)|
             ai.game.board.0[ai.game.pos.y as usize + i] |= m
         );

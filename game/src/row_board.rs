@@ -37,7 +37,7 @@ impl PiecePos {
     }
 
     #[inline]
-    pub fn get_masks(&self) -> Option<BlockMasks> {
+    pub const fn get_masks(&self) -> BlockMasks {
         use Piece::*;
         use Rotation::*;
 
@@ -63,8 +63,7 @@ impl PiecePos {
             (Z, Down | Up) => Z_DOWN_UP >> self.x,
         };
 
-        let masks = unsafe { std::mem::transmute::<u64, [u16; 4]>(mask) };
-        Some(masks)
+        unsafe { std::mem::transmute::<u64, [u16; 4]>(mask) }
     }
 }
 
@@ -94,11 +93,8 @@ impl RowBoard {
     }
 
     #[inline]
-    pub fn no_collision(&self, pos: PiecePos) -> bool {
-        let [mask1, mask2, mask3, mask4] = match pos.get_masks() {
-            Some(m) => m,
-            None => return false,
-        };
+    pub const fn no_collision(&self, pos: PiecePos) -> bool {
+        let [mask1, mask2, mask3, mask4] = pos.get_masks();
 
         // dbg!(pos.y);
         // println!("{:b}, {:b}", self.0[pos.y as usize], mask1);
@@ -114,7 +110,7 @@ impl RowBoard {
     }
 
     #[inline]
-    pub fn try_up(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub const fn try_up(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = PiecePos {
             y: pos.y.wrapping_sub(1),
             x: pos.x,
@@ -122,12 +118,14 @@ impl RowBoard {
             rot: pos.rot,
         };
 
-        self.no_collision(new_pos)
-            .then_some(new_pos)
+        match self.no_collision(new_pos) {
+            true => Some(new_pos),
+            _ => None
+        }
     }
 
     #[inline]
-    pub fn try_down(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub const fn try_down(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = PiecePos {
             y: pos.y + 1,
             x: pos.x,
@@ -135,28 +133,34 @@ impl RowBoard {
             rot: pos.rot,
         };
 
-        self.no_collision(new_pos)
-            .then_some(new_pos)
+        match self.no_collision(new_pos) {
+            true => Some(new_pos),
+            _ => None
+        }
     }
 
     #[inline]
-    pub fn try_left(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub const fn try_left(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = pos.moved_left();
 
-        self.no_collision(new_pos)
-            .then_some(new_pos)
+        match self.no_collision(new_pos) {
+            true => Some(new_pos),
+            _ => None
+        }
     }
 
     #[inline]
-    pub fn try_right(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub const fn try_right(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = pos.moved_right();
 
-        self.no_collision(new_pos)
-            .then_some(new_pos)
+        match self.no_collision(new_pos) {
+            true => Some(new_pos),
+            _ => None
+        }
     }
 
     #[inline]
-    pub fn try_rot_cw(&self, mut pos: PiecePos) -> Option<(PiecePos, Rotation)> {
+    pub const fn try_rot_cw(&self, mut pos: PiecePos) -> Option<PiecePos> {
         use Piece::*;
         use Rotation::*;
 
@@ -167,12 +171,14 @@ impl RowBoard {
             (_, rot) => rot.as_cw(),
         };
 
-        self.no_collision(pos)
-            .then_some((pos, pos.rot))
+        match self.no_collision(pos) {
+            true => Some(pos),
+            _ => None
+        }
     }
 
     #[inline]
-    pub fn try_rot_ccw(&self, mut pos: PiecePos) -> Option<(PiecePos, Rotation)> {
+    pub const fn try_rot_ccw(&self, mut pos: PiecePos) -> Option<PiecePos> {
         use Piece::*;
         use Rotation::*;
 
@@ -183,8 +189,10 @@ impl RowBoard {
             (_, rot) => rot.as_ccw(),
         };
 
-        self.no_collision(pos)
-            .then_some((pos, pos.rot))
+        match self.no_collision(pos) {
+            true => Some(pos),
+            _ => None
+        }
     }
 
     #[inline]
