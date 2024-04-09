@@ -1,139 +1,129 @@
 use crate::{consts_row::*, pieces::*};
 
-pub const BOARD_HEIGHT: usize = 22;
-pub const MIN_Y: usize = 3;
-pub const MAX_Y: usize = BOARD_HEIGHT - 1;
+pub const BOARD_HEIGHT: usize = 26;
+pub const BOARD_HEIGHT_U8: u8 = BOARD_HEIGHT as u8;
+pub const MAX_Y: u8 = (BOARD_HEIGHT - 4) as u8;
 pub const BOUNDS: u16 = 0b1110000000000111;
-pub const FULL_LINE: u16 = 0b0001111111111000;
+pub const FULL_LINE: u16 = u16::MAX;
 // const B16_64: u64 = BOUNDS as u64;
 // pub const BOUNDS64: u64 = (B16_64 << 48) + (B16_64 << 32) + (B16_64 << 16) + (B16_64);
 
 pub type BlockMasks = [u16; 4];
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct PiecePos {
-    pub y: usize,
-    pub masks: BlockMasks,
-    pub x: usize,
+    pub piece: Piece,
+    pub rot: Rotation,
+    pub x: u8,
+    pub y: u8,
 }
 
 impl PiecePos {
     #[inline]
-    pub const fn new(x: usize, y: usize, masks: BlockMasks) -> Self {
-        Self { x, y, masks }
+    pub const fn new(x: u8, y: u8, piece: Piece, rot: Rotation) -> Self {
+        Self { x, y, piece, rot }
     }
 
     #[inline]
-    pub const fn moved_left(self) -> Self {
-        unsafe {
-            let mut res = std::mem::transmute::<Self, (u64, u64, u64)>(self);
-            res.1 <<= 1;
-            res.2 = res.2.wrapping_sub(1);
-            std::mem::transmute::<(u64, u64, u64), Self>(res)
-        }
+    pub const fn moved_left(mut self) -> Self {
+        self.x = self.x.wrapping_sub(1);
+        self
     }
 
     #[inline]
-    pub const fn moved_right(self) -> Self {
-        let mut res = unsafe { std::mem::transmute::<Self, (u64, u64, u64)>(self) };
-        res.1 >>= 1;
-        res.2 += 1;
-        unsafe { std::mem::transmute::<(u64, u64, u64), Self>(res) }
+    pub const fn moved_right(mut self) -> Self {
+        self.x += 1;
+        self
     }
 
     #[inline]
-    pub const fn with_u64_mask(self, mask: u64) -> Self {
-        let mut res = unsafe { std::mem::transmute::<Self, (u64, u64, u64)>(self) };
-        res.1 = mask;
-        unsafe { std::mem::transmute::<(u64, u64, u64), Self>(res) }
+    pub fn get_masks(&self) -> Option<BlockMasks> {
+        use Piece::*;
+        use Rotation::*;
+
+        let mask = match (self.piece, self.rot) {
+            (I, Right | Left) => I_RIGHT_LEFT.get(self.x as usize)?,
+            (I, Down | Up) => I_DOWN_UP.get(self.x as usize)?,
+            (L, Right) => L_RIGHT.get(self.x as usize)?,
+            (L, Down) => L_DOWN.get(self.x as usize)?,
+            (L, Left) => L_LEFT.get(self.x as usize)?,
+            (L, Up) => L_UP.get(self.x as usize)?,
+            (J, Right) => J_RIGHT.get(self.x as usize)?,
+            (J, Down) => J_DOWN.get(self.x as usize)?,
+            (J, Left) => J_LEFT.get(self.x as usize)?,
+            (J, Up) => J_UP.get(self.x as usize)?,
+            (O, _) => O_ALL.get(self.x as usize)?,
+            (T, Right) => T_RIGHT.get(self.x as usize)?,
+            (T, Down) => T_DOWN.get(self.x as usize)?,
+            (T, Left) => T_LEFT.get(self.x as usize)?,
+            (T, Up) => T_UP.get(self.x as usize)?,
+            (S, Right | Left) => S_RIGHT_LEFT.get(self.x as usize)?,
+            (S, Down | Up) => S_DOWN_UP.get(self.x as usize)?,
+            (Z, Right | Left) => Z_RIGHT_LEFT.get(self.x as usize)?,
+            (Z, Down | Up) => Z_DOWN_UP.get(self.x as usize)?,
+        };
+
+        let masks = unsafe { std::mem::transmute::<u64, [u16; 4]>(*mask) };
+        Some(masks)
     }
-
-    // #[inline]
-    // pub const fn with_u64_mask_and(self, mask: u64) -> Self {
-    //     let mut res = unsafe { std::mem::transmute::<Self, (u64, u64, u64)>(self) };
-    //     res.1 &= mask;
-    //     unsafe { std::mem::transmute::<(u64, u64, u64), Self>(res) }
-    // }
-
-    // #[inline]
-    // pub const fn with_u64_mask_or(self, mask: u64) -> Self {
-    //     let mut res = unsafe { std::mem::transmute::<Self, (u64, u64, u64)>(self) };
-    //     res.1 |= mask;
-    //     unsafe { std::mem::transmute::<(u64, u64, u64), Self>(res) }
-    // }
-
-    // #[inline]
-    // pub const fn with_u64_mask_xor(self, mask: u64) -> Self {
-    //     let mut res = unsafe { std::mem::transmute::<Self, (u64, u64, u64)>(self) };
-    //     res.1 ^= mask;
-    //     unsafe { std::mem::transmute::<(u64, u64, u64), Self>(res) }
-    // }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct RowBoard(pub [u16; BOARD_HEIGHT]);
+
+impl Default for RowBoard {
+    fn default() -> Self {
+        let board = [
+            0, 0, 0, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS,
+            BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS,
+            FULL_LINE, FULL_LINE, FULL_LINE,
+        ];
+        Self(board)
+    }
+}
 
 impl RowBoard {
     #[inline]
     pub const fn new() -> Self {
-        Self([0; BOARD_HEIGHT])
+        let board = [
+            0, 0, 0, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS,
+            BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS, BOUNDS,
+            FULL_LINE, FULL_LINE, FULL_LINE,
+        ];
+        Self(board)
     }
 
     #[inline]
-    pub const fn has_collision(&self, pos: PiecePos) -> bool {
-        // let [mask1, mask2, mask3, mask4] = pos.masks;
+    pub fn no_collision(&self, pos: PiecePos) -> bool {
+        let [mask1, mask2, mask3, mask4] = match pos.get_masks() {
+            Some(m) => m,
+            None => return false,
+        };
 
-        // println!("(self.0[pos.y - 3]: {} & mask1: {mask1} & BOUNDS: {BOUNDS}) total: {}", (self.0[pos.y - 3]), (self.0[pos.y - 3] & mask1 & BOUNDS) == 0);
-        // println!("(self.0[pos.y - 2]: {} & mask2: {mask2} & BOUNDS: {BOUNDS}) total: {}", (self.0[pos.y - 2]), (self.0[pos.y - 2] & mask2 & BOUNDS) == 0);
-        // println!("(self.0[pos.y - 1]: {} & mask3: {mask3} & BOUNDS: {BOUNDS}) total: {}", (self.0[pos.y - 1]), (self.0[pos.y - 1] & mask3 & BOUNDS) == 0);
-        // println!("(self.0[pos.y]: {} & mask4: {mask4} & BOUNDS: {BOUNDS}) total: {}", (self.0[pos.y]), (self.0[pos.y] & mask4 & BOUNDS) == 0);
+        // dbg!(pos.y);
+        // println!("{:b}, {:b}", self.0[pos.y as usize], mask1);
+        // println!("{:b}, {:b}", self.0[pos.y as usize + 1], mask2);
+        // println!("{:b}, {:b}", self.0[pos.y as usize + 2], mask3);
+        // println!("{:b}, {:b}\n-----------", self.0[pos.y as usize + 3], mask4);
 
-        self.has_wall_collision(pos) || self.has_block_collision(pos)
-
-        // pos.y >= MIN_Y &&
-        //     pos.y < BOARD_HEIGHT &&
-        //     (self.0[pos.y - 3] & mask1 & BOUNDS) != 0 &&
-        //     (self.0[pos.y - 2] & mask2 & BOUNDS) != 0 &&
-        //     (self.0[pos.y - 1] & mask3 & BOUNDS) != 0 &&
-        //     (self.0[pos.y] & mask4 & BOUNDS) != 0
+        !(pos.y > MAX_Y ||
+            (self.0[pos.y as usize] & mask1) != 0 ||
+            (self.0[pos.y as usize + 1] & mask2) != 0 ||
+            (self.0[pos.y as usize + 2] & mask3) != 0 ||
+            (self.0[pos.y as usize + 3] & mask4) != 0)
     }
 
     #[inline]
-    pub const fn has_block_collision(&self, pos: PiecePos) -> bool {
-        let [mask1, mask2, mask3, mask4] = pos.masks;
-
-        pos.y < MIN_Y ||
-            pos.y >= BOARD_HEIGHT ||
-            (self.0[pos.y] & mask1) != 0 ||
-            (self.0[pos.y - 1] & mask2) != 0 ||
-            (self.0[pos.y - 2] & mask3) != 0 ||
-            (self.0[pos.y - 3] & mask4) != 0
-    }
-
-    #[inline]
-    pub const fn has_wall_collision(&self, pos: PiecePos) -> bool {
-        let [mask1, mask2, mask3, mask4] = pos.masks;
-
-        pos.y < MIN_Y ||    
-            pos.y >= BOARD_HEIGHT ||
-            mask1 & BOUNDS != 0 ||
-            mask2 & BOUNDS != 0 ||
-            mask3 & BOUNDS != 0 ||
-            mask4 & BOUNDS != 0
-    }
-
-    #[inline]
-    pub const fn try_up(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_up(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = PiecePos {
             y: pos.y.wrapping_sub(1),
             x: pos.x,
-            masks: pos.masks,
+            piece: pos.piece,
+            rot: pos.rot,
         };
 
-        match new_pos.y {
-            MIN_Y.. if !self.has_block_collision(new_pos) => Some(new_pos),
-            _ => None,
-        }
+        self.no_collision(new_pos)
+            .then_some(new_pos)
     }
 
     #[inline]
@@ -141,129 +131,68 @@ impl RowBoard {
         let new_pos = PiecePos {
             y: pos.y + 1,
             x: pos.x,
-            masks: pos.masks,
+            piece: pos.piece,
+            rot: pos.rot,
         };
 
-        match new_pos.y {
-            MIN_Y..=MAX_Y if !self.has_block_collision(new_pos) => Some(new_pos),
-            _ => None,
-        }
+        self.no_collision(new_pos)
+            .then_some(new_pos)
     }
 
     #[inline]
-    pub const fn try_left(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_left(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = pos.moved_left();
 
-        if !self.has_collision(new_pos) {
-            Some(new_pos)
-        } else {
-            None
-        }
+        self.no_collision(new_pos)
+            .then_some(new_pos)
     }
 
     #[inline]
-    pub const fn try_right(&self, pos: PiecePos) -> Option<PiecePos> {
+    pub fn try_right(&self, pos: PiecePos) -> Option<PiecePos> {
         let new_pos = pos.moved_right();
 
-        if !self.has_collision(new_pos) {
-            Some(new_pos)
-        } else {
-            None
-        }
+        self.no_collision(new_pos)
+            .then_some(new_pos)
     }
 
     #[inline]
-    pub fn try_rot_cw(&self, pos: PiecePos, piece: Piece, rot: Rotation) -> Option<(PiecePos, Rotation)> {
+    pub fn try_rot_cw(&self, mut pos: PiecePos) -> Option<(PiecePos, Rotation)> {
         use Piece::*;
         use Rotation::*;
 
-        let mask = match (piece, rot) {
-            (I, Right | Left) => I_DOWN_UP.get(pos.x)?,
-            (I, Down | Up) => I_RIGHT_LEFT.get(pos.x)?,
-            (L, Right) => L_DOWN.get(pos.x)?,
-            (L, Down) => L_LEFT.get(pos.x)?,
-            (L, Left) => L_UP.get(pos.x)?,
-            (L, Up) => L_RIGHT.get(pos.x)?,
-            (J, Right) => J_DOWN.get(pos.x)?,
-            (J, Down) => J_LEFT.get(pos.x)?,
-            (J, Left) => J_UP.get(pos.x)?,
-            (J, Up) => J_RIGHT.get(pos.x)?,
-            (O, _) => return None,
-            (T, Right) => T_DOWN.get(pos.x)?,
-            (T, Down) => T_LEFT.get(pos.x)?,
-            (T, Left) => T_UP.get(pos.x)?,
-            (T, Up) => T_RIGHT.get(pos.x)?,
-            (S, Right | Left) => S_DOWN_UP.get(pos.x)?,
-            (S, Down | Up) => S_RIGHT_LEFT.get(pos.x)?,
-            (Z, Right | Left) => Z_DOWN_UP.get(pos.x)?,
-            (Z, Down | Up) => Z_RIGHT_LEFT.get(pos.x)?,
+        pos.rot = match (pos.piece, pos.rot) {
+            (I | S | Z, Right | Left) => Down,
+            (I | S | Z, Down | Up) => Right,
+            (O, Right) => return None,
+            (_, rot) => rot.as_cw(),
         };
 
-        let new_pos = pos.with_u64_mask(*mask);
-
-        if !self.has_collision(new_pos) {
-            let rot = match (piece, rot) {
-                (I | S | Z, Right | Left) => Down,
-                (I | S | Z, Down | Up) => Right,
-                (O, Right) => return None,
-                _ => rot.as_cw()
-            };
-
-            Some((new_pos, rot))
-        } else {
-            None
-        }
+        self.no_collision(pos)
+            .then_some((pos, pos.rot))
     }
 
     #[inline]
-    pub fn try_rot_ccw(&self, pos: PiecePos, piece: Piece, rot: Rotation) -> Option<(PiecePos, Rotation)> {
+    pub fn try_rot_ccw(&self, mut pos: PiecePos) -> Option<(PiecePos, Rotation)> {
         use Piece::*;
         use Rotation::*;
 
-        let mask = match (piece, rot) {
-            (I, Right | Left) => I_DOWN_UP.get(pos.x)?,
-            (I, Down | Up) => I_RIGHT_LEFT.get(pos.x)?,
-            (L, Right) => L_UP.get(pos.x)?,
-            (L, Down) => L_RIGHT.get(pos.x)?,
-            (L, Left) => L_DOWN.get(pos.x)?,
-            (L, Up) => L_LEFT.get(pos.x)?,
-            (J, Right) => J_UP.get(pos.x)?,
-            (J, Down) => J_RIGHT.get(pos.x)?,
-            (J, Left) => J_DOWN.get(pos.x)?,
-            (J, Up) => J_LEFT.get(pos.x)?,
-            (T, Right) => T_UP.get(pos.x)?,
-            (T, Down) => T_RIGHT.get(pos.x)?,
-            (T, Left) => T_DOWN.get(pos.x)?,
-            (T, Up) => T_LEFT.get(pos.x)?,
-            (S, Right | Left) => S_DOWN_UP.get(pos.x)?,
-            (S, Down | Up) => S_RIGHT_LEFT.get(pos.x)?,
-            (Z, Right | Left) => Z_DOWN_UP.get(pos.x)?,
-            (Z, Down | Up) => Z_RIGHT_LEFT.get(pos.x)?,
-            (O, _) => return None,
+        pos.rot = match (pos.piece, pos.rot) {
+            (I | S | Z, Right | Left) => Down,
+            (I | S | Z, Down | Up) => Right,
+            (O, Right) => return None,
+            (_, rot) => rot.as_ccw(),
         };
 
-        let new_pos = pos.with_u64_mask(*mask);
-
-        if !self.has_collision(new_pos) {
-            let rot = match (piece, rot) {
-                (I | S | Z, Right | Left) => Down,
-                (I | S | Z, Down | Up) => Right,
-                (O, Right) => return None,
-                _ => rot.as_cw()
-            };
-
-            Some((new_pos, rot))
-        } else {
-            None
-        }
+        self.no_collision(pos)
+            .then_some((pos, pos.rot))
     }
 
     #[inline]
     pub fn find_highest_blocks(&self) -> [u8; 10] {
-        let mut res = [22; 10];
+        let mut res = [BOARD_HEIGHT_U8; 10];
 
         let cmp = 0b1000000000000000;
-        for (row_i, &r) in self.0.iter().enumerate().rev().take(20) {
+        for (row_i, &r) in self.0.iter().skip(3).enumerate().rev().skip(3) {
             let mut row = r;
             row <<= 3;
             for r in res.iter_mut() {

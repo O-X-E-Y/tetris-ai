@@ -182,7 +182,7 @@ impl<R: Rng> Game<R> {
         }
     }
 
-    pub fn drop(&mut self) -> u8 {
+    pub fn drop_piece(&mut self) -> u8 {
         while self.down().is_some() {}
 
         self.lock();
@@ -259,10 +259,8 @@ impl<R> std::fmt::Display for Game<R> {
 #[derive(Debug, Clone)]
 pub struct RowGame<R> {
     pub board: RowBoard,
-    pub current: Piece,
     pub next: Piece,
     pub pos: PiecePos,
-    pub rot: Rotation,
     pub level: Level,
     pub drop_speed: Frames,
     pub score: usize,
@@ -278,7 +276,6 @@ impl<R: Rng> RowGame<R> {
         let current = rng.next();
         let next = rng.next();
 
-        let rot = Rotation::Right;
         let pos = current.row_start_pos();
 
         let board = RowBoard::new();
@@ -289,10 +286,8 @@ impl<R: Rng> RowGame<R> {
 
         Self {
             board,
-            current,
             next,
             pos,
-            rot,
             level,
             drop_speed,
             score,
@@ -351,10 +346,9 @@ impl<R: Rng> RowGame<R> {
     }
 
     pub fn rot_cw(&mut self) -> Option<(PiecePos, Rotation)> {
-        match self.board.try_rot_cw(self.pos, self.current, self.rot) {
+        match self.board.try_rot_cw(self.pos) {
             Some((pos, rot)) => {
                 self.pos = pos;
-                self.rot = rot;
 
                 Some((pos, rot))
             }
@@ -363,10 +357,9 @@ impl<R: Rng> RowGame<R> {
     }
 
     pub fn rot_ccw(&mut self) -> Option<(PiecePos, Rotation)> {
-        match self.board.try_rot_ccw(self.pos, self.current, self.rot) {
+        match self.board.try_rot_ccw(self.pos) {
             Some((pos, rot)) => {
                 self.pos = pos;
-                self.rot = rot;
 
                 Some((pos, rot))
             }
@@ -374,24 +367,21 @@ impl<R: Rng> RowGame<R> {
         }
     }
 
-    pub fn lock(&mut self) {
-        for i in 0..4 {
-            let y = self.pos.y - i;
-            self.board.0[y] |= self.pos.masks[3 - i];
-        }
-        
-        for r in 2..BOARD_HEIGHT {
-            if self.board.0[r] ^ FULL_LINE == 0 {
+    fn lock(&mut self) {
+        let masks = self.pos.get_masks().unwrap();
+        masks.into_iter().enumerate().for_each(|(i, m)|
+            self.board.0[self.pos.y as usize + i] |= m
+        );
+
+        for r in 3..=(MAX_Y as usize) {
+            if self.board.0[r] == FULL_LINE {
                 for i in 0..r {
-                    self.board.0[i] = self.board.0[i + 1]
+                    self.board.0[r - i] = self.board.0[r - i - 1]
                 }
             }
         }
 
         self.pos = self.next.row_start_pos();
-        self.rot = Rotation::Right;
-
-        self.current = self.next;
         self.next = self.rng.next();
     }
 
@@ -405,11 +395,19 @@ impl<R: Rng> RowGame<R> {
 impl<R> std::fmt::Display for RowGame<R> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let cmp = 0b1000000000000000;
-        for (i, &r) in self.board.0.iter().enumerate().skip(2) {
+        let masks = self
+            .pos
+            .get_masks()
+            .unwrap_or_else(|| panic!("pos has no mask: {:?}", self.pos));
+
+        let mut piece_board = [0u16; BOARD_HEIGHT];
+        for i in 0..4 {
+            piece_board[self.pos.y as usize + i] = masks[i];
+        }
+
+        for (&r, mask) in self.board.0.iter().zip(piece_board).skip(3).take(20) {
             let mut r = r;
-            if self.pos.y.wrapping_sub(i) < 4 {
-                r |= self.pos.masks[self.pos.y - i];
-            }
+            r |= mask;
             r <<= 3;
             for _ in 0..10 {
                 if r & cmp == cmp {

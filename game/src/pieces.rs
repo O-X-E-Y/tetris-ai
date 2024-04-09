@@ -16,7 +16,7 @@ impl Rotation {
     pub const fn as_cw(self) -> Self {
         match self {
             R::Right => R::Down,
-            R::Down =>  R::Left,
+            R::Down => R::Left,
             R::Left => R::Up,
             R::Up => R::Right,
         }
@@ -139,19 +139,13 @@ impl Piece {
         }
     }
 
-    pub const fn row_start_pos(&self) -> crate::row_board::PiecePos {
-        let (x, y, mask) = match self {
-            Piece::I => (3, 3, crate::consts_row::I_RIGHT_LEFT[3]),
-            Piece::L => (4, 3, crate::consts_row::L_RIGHT[4]),
-            Piece::J => (4, 3, crate::consts_row::J_RIGHT[4]),
-            Piece::O => (4, 3, crate::consts_row::O_ALL[4]),
-            Piece::T => (4, 3, crate::consts_row::T_RIGHT[4]),
-            Piece::S => (4, 3, crate::consts_row::S_RIGHT_LEFT[4]),
-            Piece::Z => (4, 3, crate::consts_row::Z_RIGHT_LEFT[4]),
+    pub const fn row_start_pos(self) -> crate::row_board::PiecePos {
+        let (x, y) = match self {
+            Piece::I => (6, 1),
+            _ => (7, 1),
         };
 
-        crate::row_board::PiecePos::new(x, y, [0, 0, 0, 0])
-            .with_u64_mask(mask)
+        crate::row_board::PiecePos::new(x, y, self, Rotation::Right)
     }
 
     pub fn starting_pos(&self) -> Pos {
@@ -167,20 +161,6 @@ impl Piece {
             Z => 14,
         }
     }
-
-    // pub fn repr(&self) -> char {
-    //     use Piece::*;
-
-    //     match self {
-    //         I => 'I',
-    //         L => 'L',
-    //         J => 'J',
-    //         O => 'O',
-    //         T => 'T',
-    //         S => 'S',
-    //         Z => 'Z',
-    //     }
-    // }
 
     // pub fn unique_orientations(&self) -> &[(PiecePos, Rotation)] {
     //     use Piece::*;
@@ -278,11 +258,4 @@ impl std::fmt::Display for Piece {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}", self)
     }
-}
-
-#[test]
-fn print() {
-    let p = Piece::I;
-
-    println!("{}", p);
 }

@@ -18,8 +18,7 @@ pub fn bench_search_l(c: &mut Criterion) {
 pub fn bench_search_row_l(c: &mut Criterion) {
     let mut ai = ai::row_ai::RowTetrisAi::<game::rng::ClassicRng>::new(1, 19);
 
-    ai.game.current = game::pieces::Piece::L;
-    ai.game.pos = ai.game.current.row_start_pos();
+    ai.game.pos = game::pieces::Piece::L.row_start_pos();
 
     c.bench_function("search rows with L", |b| {
         b.iter(|| {
@@ -45,7 +44,7 @@ pub fn bench_try_left(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try left L", |b| {
-        b.iter(|| board.board.try_left(board.pos));
+        b.iter(|| board.board.try_left(black_box(board.pos)));
     });
 }
 
@@ -56,7 +55,7 @@ pub fn bench_try_right(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try right L", |b| {
-        b.iter(|| board.board.try_right(board.pos));
+        b.iter(|| board.board.try_right(black_box(board.pos)));
     });
 }
 
@@ -68,7 +67,7 @@ pub fn bench_try_rot_cw(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try rotating L clockwise", |b| {
-        b.iter(|| board.board.try_rot_cw(board.pos, board.rot, piece));
+        b.iter(|| board.board.try_rot_cw(black_box(board.pos), black_box(board.rot), black_box(piece)));
     });
 }
 
@@ -80,7 +79,7 @@ pub fn bench_try_rot_ccw(c: &mut Criterion) {
     board.down();
 
     c.bench_function("try rotating L counter clockwise", |b| {
-        b.iter(|| board.board.try_rot_ccw(board.pos, board.rot, piece));
+        b.iter(|| board.board.try_rot_ccw(black_box(board.pos), black_box(board.rot), black_box(piece)));
     });
 }
 
@@ -107,12 +106,8 @@ pub fn bench_try_up_rows(c: &mut Criterion) {
     let pos = game::row_board::PiecePos {
         x: 6,
         y: 6,
-        masks: [
-            0b0000000000000000,
-            0b0000001110000000,
-            0b0000000010000000,
-            0b0000000000000000,
-        ],
+        piece: game::pieces::Piece::L,
+        rot: game::pieces::Rotation::Right,
     };
 
     c.bench_function("try up on row board", |b| {
@@ -126,12 +121,8 @@ pub fn bench_try_down_rows(c: &mut Criterion) {
     let pos = game::row_board::PiecePos {
         x: 6,
         y: 6,
-        masks: [
-            0b0000000000000000,
-            0b0000001110000000,
-            0b0000000010000000,
-            0b0000000000000000,
-        ],
+        piece: game::pieces::Piece::L,
+        rot: game::pieces::Rotation::Right,
     };
 
     c.bench_function("try down on row board", |b| {
@@ -145,12 +136,8 @@ pub fn bench_try_left_rows(c: &mut Criterion) {
     let pos = game::row_board::PiecePos {
         x: 6,
         y: 6,
-        masks: [
-            0b0000000000000000,
-            0b0000001110000000,
-            0b0000000010000000,
-            0b0000000000000000,
-        ],
+        piece: game::pieces::Piece::L,
+        rot: game::pieces::Rotation::Right,
     };
 
     c.bench_function("try left on row board", |b| {
@@ -164,12 +151,8 @@ pub fn bench_try_right_rows(c: &mut Criterion) {
     let pos = game::row_board::PiecePos {
         x: 6,
         y: 6,
-        masks: [
-            0b0000000000000000,
-            0b0000001110000000,
-            0b0000000010000000,
-            0b0000000000000000,
-        ],
+        piece: game::pieces::Piece::L,
+        rot: game::pieces::Rotation::Right,
     };
 
     c.bench_function("try right on row board", |b| {
@@ -177,5 +160,15 @@ pub fn bench_try_right_rows(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_search_row_l);
+pub fn bench_try_rot_cw_rows(c: &mut Criterion) {
+    let board = game::row_board::RowBoard::new();
+
+    let pos = game::pieces::Piece::L.row_start_pos();
+
+    c.bench_function("try right on row board", |b| {
+        b.iter(|| board.try_rot_cw(black_box(pos)));
+    });
+}
+
+criterion_group!(benches, bench_try_rot_cw_rows, bench_try_rot_cw);
 criterion_main!(benches);

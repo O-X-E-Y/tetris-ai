@@ -1,44 +1,18 @@
 use std::collections::HashSet;
 
 use ai::TetrisAi;
-use game::{board::*, pieces::Piece, rng::*, Game, row_board::{RowBoard, PiecePos as PP}};
+use game::{
+    board::*,
+    pieces::Piece,
+    rng::*,
+    row_board::{PiecePos as PP, RowBoard},
+    Game,
+};
 
 fn main() {
-    // piece_rot();
+    piece_rot();
 
     // play();
-
-    // let mut b = RowBoard::new();
-    // let pos = Piece::T.row_start_pos();
-    // let pos = b.try_left(pos).unwrap();
-    // let pos = b.try_left(pos).unwrap();
-    // let (pos, rot) = b.try_rot_ccw(pos, Piece::T, game::pieces::Rotation::Right).unwrap();
-    // let pos = b.try_left(pos).unwrap();
-    // // let pos = b.try_left(pos).unwrap();
-    // // let pos = b.try_left(pos).unwrap();
-    // // let pos = b.try_left(pos).unwrap();
-    // // let pos = b.try_left(pos).unwrap();
-    // println!("{pos:?}");
-    // // println!("{b}");
-    // // b.lock(pos);
-    // println!("{b}");
-
-    let mut g = game::RowGame::<ClassicRng>::new(1);
-    println!("{g}");
-
-    g.down().unwrap();
-    g.left().unwrap();
-    g.left().unwrap();
-    g.right().unwrap();
-    g.left().unwrap();
-    
-    println!("{g}");
-
-    g.rot_ccw().unwrap();
-    g.rot_cw();
-
-    println!("{g}");
-
 }
 
 pub fn play() {
@@ -71,8 +45,12 @@ pub fn play() {
 }
 
 pub fn piece_rot() {
-    let mut g = Game::<OrderedRng>::new(19);
+    let mut g = game::RowGame::<OrderedRng>::new(19);
 
+    println!("{:?}", g.pos);
+    for m in g.pos.get_masks().unwrap() {
+        println!("{m:b}");
+    }
     println!("{g}");
 
     g.left();
@@ -89,124 +67,138 @@ pub fn piece_rot() {
     g.rot_cw();
 
     println!("{g}");
+    // println!("{:?}", g.pos);
 
     g.left();
-
-    println!("{g}");
-
-    g.rot_cw();
-
+    g.left();
+    g.left();
     println!("{g}");
 
     g.right();
-    g.rot_cw();
-    g.drop();
-    g.down();
-    g.down();
-
-    println!("{g}");
-    println!("{:?}: {:?}", g.rot, g.pos);
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-
     g.right();
-    g.drop();
-
-    g.down();
-
-    println!("{g}");
-
-    println!("{:?}: {:?}", g.rot, g.pos);
     g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-
-    g.left();
-    g.left();
-    g.drop();
-
-    g.down();
-    g.right();
-    g.right();
-    g.right();
-
-    println!("{g}");
-
-    g.left();
-    g.left();
-    g.left();
-    g.left();
-    g.left();
-    g.left();
-    g.left();
-    g.left();
-    g.rot_cw();
-    g.rot_cw();
-    g.drop();
-
-    g.down();
-    g.down();
-
-    println!("{g}");
-
-    println!("{:?}: {:?}", g.rot, g.pos);
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-    g.rot_cw();
-    println!("{:?}: {:?}", g.rot, g.pos);
-    println!("{g}");
-
     g.rot_ccw();
+    g.right();
+    g.right();
+    g.right();
+    g.right();
+    g.right();
+    g.right();
+    g.right();
+    g.right();
+    g.right();
+
+    println!("{g}");
+
+    g.left();
     g.rot_ccw();
     g.left();
     g.left();
-    g.drop();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.drop_piece();
+    g.down();
+    g.down();
 
     println!("{g}");
 
+    println!("{g}");
+    println!("{:?}", g.pos);
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+
+    g.left();
+    g.rot_ccw();
+    g.drop_piece();
+
+    g.down();
+
+    println!("{g}");
+
+    println!("{:?}", g.pos);
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+
+    g.left();
+    g.left();
+    g.rot_cw();
+
+    println!("{g}");
+    g.drop_piece();
+
+    g.down();
+
+    println!("{g}");
+
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.left();
+    g.rot_cw();
+    g.rot_cw();
+
+    g.drop_piece();
+    g.down();
+    g.down();
+
+    println!("{g}");
+
+    println!("{:?}", g.pos);
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+    g.rot_cw();
+    println!("{:?}", g.pos);
+    println!("{g}");
+
+    g.right();
+    g.drop_piece();
+    // g.down();
+    // g.right();
+    // g.right();
+    // g.right();
+    // // g.down();
     // g.rot_ccw();
+    
+    // println!("{g}");
 
-    // g.right();
-    // g.right();
-    // g.right();
-    // g.right();
     // for _ in 0..18 {
     //     g.down();
     // }
-
-    // println!("{g}");
-
-    // g.rot_ccw();
-
-    // println!("{g}");
-
-    // g.rot_ccw();
 
     // println!("{g}");
 
@@ -214,17 +206,25 @@ pub fn piece_rot() {
 
     // println!("{g}");
 
-    // g.drop();
+    // g.rot_ccw();
 
     // println!("{g}");
 
-    println!("{:?}", g.board.find_highest_blocks());
+    // g.rot_ccw();
+
+    // println!("{g}");
+
+    // g.drop_piece();
+
+    // println!("{g}");
+
+    // println!("{:?}", g.board.find_highest_blocks());
 
     // g.left();
 
-    // println!("{g}");
+    println!("{g}");
 
-    let mut ai = ai::TetrisAi::from_game(g, 3);
+    let mut ai = ai::row_ai::RowTetrisAi::from_game(g, 3);
 
     let score = ai.eval();
 
@@ -240,21 +240,18 @@ pub fn piece_rot() {
 
         let highest_blocks_old = ai.highest_blocks;
 
-        for p in ai.game.pos {
-            ai.game.board.0[p as usize] = Some(ai.game.current);
-
-            if ai.highest_blocks[(p % 10) as usize] > p {
-                ai.highest_blocks[(p % 10) as usize] = p;
-            }
-        }
+        let masks = ai.game.pos.get_masks().unwrap();
+        masks.into_iter().enumerate().for_each(|(i, m)|
+            ai.game.board.0[ai.game.pos.y as usize + i] |= m
+        );
 
         let score = time_this::time!(ai.eval());
 
         println!("eval score: {}", score);
 
-        for p in ai.game.pos {
-            ai.game.board.0[p as usize] = None;
-        }
+        masks.into_iter().enumerate().for_each(|(i, m)|
+            ai.game.board.0[ai.game.pos.y as usize + i] ^= m
+        );
 
         ai.highest_blocks = highest_blocks_old;
     }
