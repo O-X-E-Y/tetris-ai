@@ -165,10 +165,10 @@ pub fn bench_try_rot_cw_rows(c: &mut Criterion) {
 
     let pos = game::pieces::Piece::L.row_start_pos();
 
-    c.bench_function("try right on row board", |b| {
+    c.bench_function("try rotating L clockwise on row board", |b| {
         b.iter(|| board.try_rot_cw(black_box(pos)));
     });
 }
 
-criterion_group!(benches, bench_try_rot_cw_rows, bench_try_rot_cw);
+criterion_group!(benches, bench_search_row_l);
 criterion_main!(benches);

@@ -42,28 +42,28 @@ impl PiecePos {
         use Rotation::*;
 
         let mask = match (self.piece, self.rot) {
-            (I, Right | Left) => I_RIGHT_LEFT.get(self.x as usize)?,
-            (I, Down | Up) => I_DOWN_UP.get(self.x as usize)?,
-            (L, Right) => L_RIGHT.get(self.x as usize)?,
-            (L, Down) => L_DOWN.get(self.x as usize)?,
-            (L, Left) => L_LEFT.get(self.x as usize)?,
-            (L, Up) => L_UP.get(self.x as usize)?,
-            (J, Right) => J_RIGHT.get(self.x as usize)?,
-            (J, Down) => J_DOWN.get(self.x as usize)?,
-            (J, Left) => J_LEFT.get(self.x as usize)?,
-            (J, Up) => J_UP.get(self.x as usize)?,
-            (O, _) => O_ALL.get(self.x as usize)?,
-            (T, Right) => T_RIGHT.get(self.x as usize)?,
-            (T, Down) => T_DOWN.get(self.x as usize)?,
-            (T, Left) => T_LEFT.get(self.x as usize)?,
-            (T, Up) => T_UP.get(self.x as usize)?,
-            (S, Right | Left) => S_RIGHT_LEFT.get(self.x as usize)?,
-            (S, Down | Up) => S_DOWN_UP.get(self.x as usize)?,
-            (Z, Right | Left) => Z_RIGHT_LEFT.get(self.x as usize)?,
-            (Z, Down | Up) => Z_DOWN_UP.get(self.x as usize)?,
+            (I, Right | Left) => I_RIGHT_LEFT >> self.x,
+            (I, Down | Up) => I_DOWN_UP >> self.x,
+            (L, Right) => L_RIGHT >> self.x,
+            (L, Down) => L_DOWN >> self.x,
+            (L, Left) => L_LEFT >> self.x,
+            (L, Up) => L_UP >> self.x,
+            (J, Right) => J_RIGHT >> self.x,
+            (J, Down) => J_DOWN >> self.x,
+            (J, Left) => J_LEFT >> self.x,
+            (J, Up) => J_UP >> self.x,
+            (O, _) => O_ALL >> self.x,
+            (T, Right) => T_RIGHT >> self.x,
+            (T, Down) => T_DOWN >> self.x,
+            (T, Left) => T_LEFT >> self.x,
+            (T, Up) => T_UP >> self.x,
+            (S, Right | Left) => S_RIGHT_LEFT >> self.x,
+            (S, Down | Up) => S_DOWN_UP >> self.x,
+            (Z, Right | Left) => Z_RIGHT_LEFT >> self.x,
+            (Z, Down | Up) => Z_DOWN_UP >> self.x,
         };
 
-        let masks = unsafe { std::mem::transmute::<u64, [u16; 4]>(*mask) };
+        let masks = unsafe { std::mem::transmute::<u64, [u16; 4]>(mask) };
         Some(masks)
     }
 }
