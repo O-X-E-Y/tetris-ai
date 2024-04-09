@@ -32,7 +32,7 @@ pub fn bench_search_o(c: &mut Criterion) {
 
     c.bench_function("search with O", |b| {
         b.iter(|| {
-            ai.search();
+            ai.search_recursive();
         });
     });
 }

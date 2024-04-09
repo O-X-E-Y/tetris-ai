@@ -27,7 +27,7 @@ impl<R> RowTetrisAi<R> {
     }
 
     pub fn find_best_move(&mut self) -> Option<(PiecePos, u32)> {
-        let positions = self.search();
+        let positions = self.search_recursive();
         let mut best_score = u32::MAX;
         let mut best_pos = None;
 
@@ -104,6 +104,89 @@ impl<R> RowTetrisAi<R> {
     }
 
     pub fn search(&self) -> ArrayVec<PiecePos, 100> {
+        use Piece::*;
+        
+        let mut final_states = ArrayVec::new();
+        let mut searched_states = [0u8; BOARD_HEIGHT * 10];
+        let mut stack = Vec::with_capacity(70);
+        stack.push(self.game.pos);
+
+        while let Some(pos) = stack.pop() {
+
+            if let Some(new_pos) = self.game.board.try_left(pos) {
+                let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
+                if searched_i < searched_states.len()
+                    && searched_states[searched_i] & new_pos.rot as u8 == 0
+                {
+                    searched_states[searched_i] |= new_pos.rot as u8;
+                    stack.push(new_pos)
+                }
+            }
+    
+            if let Some(new_pos) = self.game.board.try_right(pos) {
+                let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
+                if searched_i < searched_states.len()
+                    && searched_states[searched_i] & new_pos.rot as u8 == 0
+                {
+                    searched_states[searched_i] |= new_pos.rot as u8;
+                    stack.push(new_pos)
+                }
+            }
+    
+            match self.game.pos.piece {
+                I | S | Z => {
+                    if let Some(new_pos) = self.game.board.try_rot_cw(pos) {
+                        let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
+                        if searched_i < searched_states.len()
+                            && searched_states[searched_i] & new_pos.rot as u8 == 0
+                        {
+                            searched_states[searched_i] |= new_pos.rot as u8;
+                            stack.push(new_pos)
+                        }
+                    }
+                },
+                L | J | T => {
+                    if let Some(new_pos) = self.game.board.try_rot_cw(pos) {
+                        let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
+                        if searched_i < searched_states.len()
+                            && searched_states[searched_i] & new_pos.rot as u8 == 0
+                        {
+                            searched_states[searched_i] |= new_pos.rot as u8;
+                            stack.push(new_pos)
+                        }
+                    }
+            
+                    if let Some(new_pos) = self.game.board.try_rot_ccw(pos) {
+                        let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
+                        if searched_i < searched_states.len()
+                            && searched_states[searched_i] & new_pos.rot as u8 == 0
+                        {
+                            searched_states[searched_i] |= new_pos.rot as u8;
+                            stack.push(new_pos)
+                        }
+                    }
+                },
+                O => {}
+            }
+    
+            match self.game.board.try_down(pos) {
+                Some(new_pos) => {
+                    let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
+                    if searched_i < searched_states.len()
+                        && searched_states[searched_i] & new_pos.rot as u8 == 0
+                    {
+                        searched_states[searched_i] |= new_pos.rot as u8;
+                        stack.push(new_pos)
+                    }
+                }
+                None => final_states.push(pos),
+            }
+        }
+
+        final_states
+    }
+
+    pub fn search_recursive(&self) -> ArrayVec<PiecePos, 100> {
         let mut final_states = ArrayVec::new();
         let mut searched_states = [0u8; BOARD_HEIGHT * 10];
 
@@ -163,7 +246,7 @@ impl<R> RowTetrisAi<R> {
         }
     }
 
-    #[inline]
+    #[inline(never)]
     fn search_only_cw(
         &self,
         pos: PiecePos,
@@ -181,7 +264,7 @@ impl<R> RowTetrisAi<R> {
         }
     }
 
-    #[inline]
+    #[inline(never)]
     fn search_cw_ccw(
         &self,
         pos: PiecePos,
@@ -234,11 +317,11 @@ impl<R: Rng> RowTetrisAi<R> {
     }
 }
 
-#[test]
-fn search_l() {
-    let mut ai = RowTetrisAi::<game::rng::ClassicRng>::new(1, 19);
+// #[test]
+// fn search_l() {
+//     let mut ai = RowTetrisAi::<game::rng::ClassicRng>::new(1, 19);
 
-    ai.game.pos = game::pieces::Piece::L.row_start_pos();
+//     ai.game.pos = game::pieces::Piece::L.row_start_pos();
 
-    ai.search();
-}
+//     ai.search();
+// }

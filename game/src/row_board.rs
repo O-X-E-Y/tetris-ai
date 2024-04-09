@@ -5,8 +5,6 @@ pub const BOARD_HEIGHT_U8: u8 = BOARD_HEIGHT as u8;
 pub const MAX_Y: u8 = (BOARD_HEIGHT - 4) as u8;
 pub const BOUNDS: u16 = 0b1110000000000111;
 pub const FULL_LINE: u16 = u16::MAX;
-// const B16_64: u64 = BOUNDS as u64;
-// pub const BOUNDS64: u64 = (B16_64 << 48) + (B16_64 << 32) + (B16_64 << 16) + (B16_64);
 
 pub type BlockMasks = [u16; 4];
 
