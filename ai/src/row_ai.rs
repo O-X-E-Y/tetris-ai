@@ -1,7 +1,7 @@
 use arrayvec::ArrayVec;
 
 use game::{
-    pieces::{Piece, Rotation},
+    pieces::Piece,
     rng::*,
     row_board::*,
     Frames, Level, RowGame,
@@ -215,9 +215,6 @@ impl<R> RowTetrisAi<R> {
 
         if let Some(new_pos) = self.game.board.try_right(pos) {
             let searched_i = new_pos.y as usize * 10 + new_pos.x as usize;
-            // if searched_states[searched_i] & new_pos.rot as u8 != 0 {
-            //     dbg!(searched_i, pos.rot, new_pos);
-            // }
             if searched_i < searched_states.len()
                 && searched_states[searched_i] & new_pos.rot as u8 == 0
             {

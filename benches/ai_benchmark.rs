@@ -59,6 +59,17 @@ pub fn bench_try_right(c: &mut Criterion) {
     });
 }
 
+pub fn bench_try_down(c: &mut Criterion) {
+    let mut board = util::game_with_start_piece(game::pieces::Piece::L, 19);
+
+    board.down();
+    board.down();
+
+    c.bench_function("try down L", |b| {
+        b.iter(|| board.board.try_down(black_box(board.pos)));
+    });
+}
+
 pub fn bench_try_rot_cw(c: &mut Criterion) {
     let piece = game::pieces::Piece::L;
     let mut board = util::game_with_start_piece(piece, 19);
@@ -170,5 +181,5 @@ pub fn bench_try_rot_cw_rows(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_search_row_l);
+criterion_group!(benches, bench_search_l);
 criterion_main!(benches);
