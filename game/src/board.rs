@@ -32,22 +32,6 @@ impl Board {
         }
         let next_pos = apply_mask(pos, MOVE_UP);
         Some(next_pos)
-
-        // for p in pos {
-        //     if p < BW {
-        //         return None;
-        //     }
-        // }
-
-        // let next_pos = apply_mask(pos, MOVE_UP);
-
-        // for p in next_pos {
-        //     if self.0[p as usize].is_some() {
-        //         return None;
-        //     }
-        // }
-
-        // Some(next_pos)
     }
 
     #[inline]
@@ -59,21 +43,6 @@ impl Board {
         }
         let next_pos = apply_mask(pos, MOVE_DOWN);
         Some(next_pos)
-        // for p in pos {
-        //     if p >= BOARD_SIZE_U8 - BW {
-        //         return None;
-        //     }
-        // }
-
-        // let next_pos = apply_mask(pos, MOVE_DOWN);
-
-        // for p in next_pos {
-        //     if self.0[p as usize].is_some() {
-        //         return None;
-        //     }
-        // }
-
-        // Some(next_pos)
     }
 
     #[inline]
@@ -85,38 +54,6 @@ impl Board {
         }
         let next_pos = apply_mask(pos, MOVE_LEFT);
         Some(next_pos)
-
-        // unsafe {
-        //     for p in pos {
-        //         // the get_unchecked call adds about 2% of performance. Can't UB because the board size is greater
-        //         // than the width of `u8`, still feels kind of nasty to use
-        //         if p % BW == 0 || self.0.get_unchecked(p as usize - 1).is_some() {
-        //             return None;
-        //         }
-        //     }
-        //     let next_pos = apply_mask(pos, MOVE_LEFT);
-        //     Some(next_pos)
-        // }
-
-        /*
-            THE PERFORMANCE OF THESE IS BASICALLY IDENTICAL
-            */
-
-        // for p in pos.into_iter().rev() {
-        //     if p % BW == 0 {
-        //         return None;
-        //     }
-        // }
-
-        // let next_pos = apply_mask(pos, MOVE_LEFT);
-
-        // for p in next_pos {
-        //     if self.0[p as usize].is_some() {
-        //         return None;
-        //     }
-        // }
-
-        // Some(next_pos)
     }
 
     #[inline]
@@ -128,22 +65,6 @@ impl Board {
         }
         let next_pos = apply_mask(pos, MOVE_RIGHT);
         Some(next_pos)
-
-        // for p in pos.into_iter().rev() {
-        //     if p % BW == BW - 1 {
-        //         return None;
-        //     }
-        // }
-
-        // let next_pos = apply_mask(pos, MOVE_RIGHT);
-
-        // for p in next_pos {
-        //     if self.0[p as usize].is_some() {
-        //         return None;
-        //     }
-        // }
-
-        // Some(next_pos)
     }
 
     #[inline]
@@ -251,6 +172,18 @@ impl Board {
         };
 
         Some((next_pos, rot))
+    }
+
+    pub fn lock(&mut self, pos: PiecePositions, piece: Piece) {
+        for p in pos {
+            self.0[p as usize] = Some(piece);
+        }
+    }
+
+    pub fn unlock(&mut self, pos: PiecePositions) {
+        for p in pos {
+            self.0[p as usize] = None;
+        }
     }
 
     pub fn find_highest_blocks(&self) -> [u8; BOARD_WIDTH] {

@@ -10,36 +10,30 @@ use game::{
 };
 
 fn main() {
-    piece_rot();
+    // piece_rot();
 
-    // play();
+    play();
 }
 
 pub fn play() {
-    let mut ai = TetrisAi::<SevenBag>::new(10, 19);
+    let mut ai = TetrisAi::<SevenBag>::new(19);
 
     let stdin = std::io::stdin();
 
     loop {
         match time_this::time!(ai.find_best_move()) {
             Some((pos, score)) => {
-                ai.game.pos = pos;
+                ai.pos = pos;
 
-                for p in ai.game.pos {
-                    ai.game.board.0[p as usize] = Some(ai.game.current);
+                ai.lock();
 
-                    if ai.highest_blocks[(p % 10) as usize] > p {
-                        ai.highest_blocks[(p % 10) as usize] = p;
-                    }
-                }
+                dbg!(ai.highest_blocks);
 
-                println!("chosen board:\n{}\nscore: {}", ai.game.board, score);
-
-                ai.game.lock();
+                println!("chosen board:\n{}\nscore: {}", ai.board, score);
 
                 let _ = stdin.read_line(&mut String::new());
             }
-            None => panic!("no possible moves found! board:\n{}", ai.game.board),
+            None => panic!("no possible moves found! board:\n{}", ai.board),
         }
     }
 }

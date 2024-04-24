@@ -1,4 +1,7 @@
+pub mod flatness_states;
 pub mod row_ai;
+mod recursive_search;
+pub mod states;
 
 use arrayvec::ArrayVec;
 
@@ -6,43 +9,40 @@ use game::{
     board::*,
     pieces::{Piece, Rotation},
     rng::*,
-    Frames, Game, Level,
+    Level,
 };
 
 #[derive(Debug, Clone)]
 pub struct TetrisAi<R> {
-    pub game: Game<R>,
-    pub input_speed: Frames,
+    pub board: Board,
+    pub rng: R,
+    pub current: Piece,
+    pub next: Piece,
+    pub pos: PiecePositions,
+    pub rot: Rotation,
+    pub level: Level,
+    pub score: usize,
     pub highest_blocks: [u8; BOARD_WIDTH],
 }
 
 impl<R> TetrisAi<R> {
-    pub fn from_game(game: Game<R>, input_speed: impl Into<Frames>) -> Self {
-        let highest_blocks = game.board.find_highest_blocks();
-        let input_speed = input_speed.into();
-
-        Self {
-            game,
-            input_speed,
-            highest_blocks,
-        }
-    }
-
     pub fn find_best_move(&mut self) -> Option<(PiecePositions, u32)> {
-        let positions = self.search_recursive();
+        let positions = self.search();
         let mut best_score = u32::MAX;
         let mut best_pos = None;
 
         for pos in positions {
-            self.game.pos = pos;
+            self.pos = pos;
 
             let highest_blocks_old = self.highest_blocks;
 
-            for p in self.game.pos {
-                self.game.board.0[p as usize] = Some(self.game.current);
+            for p in self.pos {
+                self.board.0[p as usize] = Some(self.current);
 
-                if self.highest_blocks[(p % 10) as usize] > p {
-                    self.highest_blocks[(p % 10) as usize] = p;
+                let rem = p % BW;
+                let new = p - rem;
+                if self.highest_blocks[rem as usize] > new {
+                    self.highest_blocks[rem as usize] = new;
                 }
             }
 
@@ -53,8 +53,8 @@ impl<R> TetrisAi<R> {
                 best_pos = Some(pos);
             }
 
-            for p in self.game.pos {
-                self.game.board.0[p as usize] = None;
+            for p in self.pos {
+                self.board.0[p as usize] = None;
             }
 
             self.highest_blocks = highest_blocks_old;
@@ -63,23 +63,40 @@ impl<R> TetrisAi<R> {
         best_pos.map(|p| (p, best_score))
     }
 
+    pub fn holes(&self) -> u64 {
+        let mut holes = 0;
+
+        for (i, h) in self.highest_blocks.into_iter().enumerate() {
+            let mut offset = BW;
+            while h + offset < BOARD_SIZE_U8 {
+                if self.board.0[(h + offset) as usize + i].is_none() {
+                    holes += 1;
+                }
+
+                offset += BW;
+            }
+        }
+
+        holes
+    }
+
     pub fn eval(&self) -> u32 {
         let mut hole_score = 0u32;
 
-        for mut h in self.highest_blocks {
-            h += BW;
-            while h < BOARD_SIZE_U8 {
-                if self.game.board.0[h as usize].is_none() {
-                    hole_score += 2;
+        for (i, h) in self.highest_blocks.into_iter().enumerate() {
+            let mut weight = BW;
+            while h + weight < BOARD_SIZE_U8 {
+                if self.board.0[(h + weight) as usize + i].is_none() {
+                    hole_score += weight as u32;
                 }
 
-                h += BW;
+                weight += BW;
             }
         }
 
         let mut flatness = 0u32;
 
-        for h in self.highest_blocks.windows(2) {
+        for h in self.highest_blocks.windows(3) {
             let diff = h[0].abs_diff(h[1]) as u32;
             // println!("diff: {diff}");
             flatness += diff;
@@ -93,7 +110,7 @@ impl<R> TetrisAi<R> {
 
         // println!("flatness: {}, hole score: {}", flatness, hole_score.saturating_pow(2));
 
-        flatness + hole_score.saturating_pow(2) * 1000
+        flatness + hole_score * 50
     }
 
     pub fn search(&self) -> ArrayVec<PiecePositions, 100> {
@@ -102,27 +119,27 @@ impl<R> TetrisAi<R> {
         let mut final_states = ArrayVec::new();
         let mut searched_states = [0u8; BOARD_SIZE];
         let mut stack = Vec::with_capacity(70);
-        stack.push((self.game.pos, self.game.rot));
+        stack.push((self.pos, self.rot));
 
         while let Some((pos, rot)) = stack.pop() {
 
-            if let Some(new_pos) = self.game.board.try_left(pos) {
+            if let Some(new_pos) = self.board.try_left(pos) {
                 if searched_states[new_pos[0] as usize] == 0 {
                     searched_states[new_pos[0] as usize] |= rot as u8;
                     stack.push((new_pos, rot));
                 }
             }
     
-            if let Some(new_pos) = self.game.board.try_right(pos) {
+            if let Some(new_pos) = self.board.try_right(pos) {
                 if searched_states[new_pos[0] as usize] & rot as u8 == 0 {
                     searched_states[new_pos[0] as usize] |= rot as u8;
                     stack.push((new_pos, rot));
                 }
             }
     
-            match self.game.current {
+            match self.current {
                 I | S | Z => {
-                    if let Some((new_pos, new_rot)) = self.game.board.try_rot_cw(pos, rot, self.game.current) {
+                    if let Some((new_pos, new_rot)) = self.board.try_rot_cw(pos, rot, self.current) {
                         if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
                             searched_states[new_pos[0] as usize] |= new_rot as u8;
                             stack.push((new_pos, new_rot));
@@ -130,14 +147,14 @@ impl<R> TetrisAi<R> {
                     }
                 },
                 L | J | T => {
-                    if let Some((new_pos, new_rot)) = self.game.board.try_rot_cw(pos, rot, self.game.current) {
+                    if let Some((new_pos, new_rot)) = self.board.try_rot_cw(pos, rot, self.current) {
                         if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
                             searched_states[new_pos[0] as usize] |= new_rot as u8;
                             stack.push((new_pos, new_rot));
                         }
                     }
             
-                    if let Some((new_pos, new_rot)) = self.game.board.try_rot_ccw(pos, rot, self.game.current) {
+                    if let Some((new_pos, new_rot)) = self.board.try_rot_ccw(pos, rot, self.current) {
                         if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
                             searched_states[new_pos[0] as usize] |= new_rot as u8;
                             stack.push((new_pos, new_rot));
@@ -147,7 +164,7 @@ impl<R> TetrisAi<R> {
                 O => {}
             }
     
-            match self.game.board.try_down(pos) {
+            match self.board.try_down(pos) {
                 Some(new_pos) if searched_states[new_pos[0] as usize] & rot as u8 == 0 => {
                     searched_states[new_pos[0] as usize] |= rot as u8;
                     stack.push((new_pos, rot));
@@ -159,130 +176,77 @@ impl<R> TetrisAi<R> {
 
         final_states
     }
-
-    pub fn search_recursive(&self) -> ArrayVec<PiecePositions, 100> {
-        let mut final_states = ArrayVec::new();
-        let mut searched_states = [0u8; BOARD_SIZE];
-
-        self.search_helper(
-            self.game.pos,
-            self.game.rot,
-            &mut searched_states,
-            &mut final_states,
-        );
-
-        final_states
-    }
-
-    fn search_helper(
-        &self,
-        pos: PiecePositions,
-        rot: Rotation,
-        searched_states: &mut [u8; BOARD_SIZE],
-        final_states: &mut ArrayVec<PiecePositions, 100>,
-    ) {
-        use Piece::*;
-
-        if let Some(new_pos) = self.game.board.try_left(pos) {
-            if searched_states[new_pos[0] as usize] == 0 {
-                searched_states[new_pos[0] as usize] |= rot as u8;
-                self.search_helper(new_pos, rot, searched_states, final_states)
-            }
-        }
-
-        if let Some(new_pos) = self.game.board.try_right(pos) {
-            if searched_states[new_pos[0] as usize] & rot as u8 == 0 {
-                searched_states[new_pos[0] as usize] |= rot as u8;
-                self.search_helper(new_pos, rot, searched_states, final_states)
-            }
-        }
-
-        match self.game.current {
-            I | S | Z => self.search_only_cw(pos, rot, searched_states, final_states),
-            L | J | T => self.search_cw_ccw(pos, rot, searched_states, final_states),
-            O => {}
-        }
-
-        match self.game.board.try_down(pos) {
-            Some(new_pos) if searched_states[new_pos[0] as usize] & rot as u8 == 0 => {
-                searched_states[new_pos[0] as usize] |= rot as u8;
-                self.search_helper(new_pos, rot, searched_states, final_states)
-            }
-            None => final_states.push(pos),
-            _ => {}
-        }
-    }
-
-    #[inline]
-    fn search_only_cw(
-        &self,
-        pos: PiecePositions,
-        rot: Rotation,
-        searched_states: &mut [u8; BOARD_SIZE],
-        final_states: &mut ArrayVec<PiecePositions, 100>,
-    ) {
-        if let Some((new_pos, new_rot)) = self.game.board.try_rot_cw(pos, rot, self.game.current) {
-            if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
-                searched_states[new_pos[0] as usize] |= new_rot as u8;
-                self.search_helper(new_pos, new_rot, searched_states, final_states)
-            }
-        }
-    }
-
-    #[inline]
-    fn search_cw_ccw(
-        &self,
-        pos: PiecePositions,
-        rot: Rotation,
-        searched_states: &mut [u8; BOARD_SIZE],
-        final_states: &mut ArrayVec<PiecePositions, 100>,
-    ) {
-        if let Some((new_pos, new_rot)) = self.game.board.try_rot_cw(pos, rot, self.game.current) {
-            if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
-                searched_states[new_pos[0] as usize] |= new_rot as u8;
-                self.search_helper(new_pos, new_rot, searched_states, final_states)
-            }
-        }
-
-        if let Some((new_pos, new_rot)) = self.game.board.try_rot_ccw(pos, rot, self.game.current) {
-            if searched_states[new_pos[0] as usize] & new_rot as u8 == 0 {
-                searched_states[new_pos[0] as usize] |= new_rot as u8;
-                self.search_helper(new_pos, new_rot, searched_states, final_states)
-            }
-        }
-    }
 }
 
 impl<R: Rng> TetrisAi<R> {
-    pub fn new(input_speed: impl Into<Frames>, level: impl Into<Level>) -> Self {
+    pub fn new(level: impl Into<Level>) -> Self {
+        let mut rng = R::init();
+        let current = rng.next();
+
+        let level = level.into();
+
         Self {
-            game: Game::new(level),
-            input_speed: input_speed.into(),
+            board: Board::new(),
             highest_blocks: [BOARD_SIZE_U8; BOARD_WIDTH],
+            current,
+            next: rng.next(),
+            pos: current.start_pos(),
+            rot: Rotation::Right,
+            level,
+            score: 0,
+            rng,
         }
     }
 
     pub fn from_board(
         board: Board,
-        input_speed: impl Into<Frames>,
         level: impl Into<Level>,
     ) -> Self {
-        let highest_pieces = board.find_highest_blocks();
+        let mut res = Self::new(level);
+        res.highest_blocks = board.find_highest_blocks();
+        res.board = board;
+        res
+    }
 
-        Self {
-            game: Game::from_board(board, level),
-            input_speed: input_speed.into(),
-            highest_blocks: highest_pieces,
+    pub fn lock(&mut self) {
+        for p in self.pos {
+            self.board.0[p as usize] = Some(self.current);
+
+            let rem = p % BW;
+            let new = p - rem;
+            if self.highest_blocks[rem as usize] > new {
+                self.highest_blocks[rem as usize] = new;
+            }
         }
+
+        let mut r = 20;
+
+        while r < BOARD_SIZE {
+            if self.board.0[r..(r + BOARD_WIDTH)]
+                .iter()
+                .all(|p| p.is_some())
+            {
+                for p in (20..r).rev() {
+                    self.board.0[p + BOARD_WIDTH] = self.board.0[p];
+                }
+            }
+            r += 10;
+        }
+
+        self.pos = self.next.start_pos();
+        self.rot = Rotation::Right;
+
+        self.current = self.next;
+        self.next = self.rng.next();
     }
 }
 
 #[test]
 fn search_l() {
-    let ai = TetrisAi::<game::rng::ClassicRng>::new(1, 19);
+    let ai = TetrisAi::<game::rng::ClassicRng>::new(19);
 
     // ai.current.pos
-    // ai.game.pos = game::pieces::Piece::L.start_pos();
+    // ai.pos = game::pieces::Piece::L.start_pos();
 
     ai.search();
 }

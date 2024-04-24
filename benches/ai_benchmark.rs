@@ -6,7 +6,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use util::tetris_ai_with_start_piece;
 
 pub fn bench_search_l(c: &mut Criterion) {
-    let ai = tetris_ai_with_start_piece(game::pieces::Piece::L, 1, 19);
+    let ai = tetris_ai_with_start_piece(game::pieces::Piece::L, 19);
 
     c.bench_function("search with L", |b| {
         b.iter(|| {
@@ -28,7 +28,7 @@ pub fn bench_search_row_l(c: &mut Criterion) {
 }
 
 pub fn bench_search_o(c: &mut Criterion) {
-    let ai = tetris_ai_with_start_piece(game::pieces::Piece::O, 1, 19);
+    let ai = tetris_ai_with_start_piece(game::pieces::Piece::O, 19);
 
     c.bench_function("search with O", |b| {
         b.iter(|| {
@@ -95,7 +95,7 @@ pub fn bench_try_rot_ccw(c: &mut Criterion) {
 }
 
 pub fn bench_find_best_move(c: &mut Criterion) {
-    let mut ai = ai::TetrisAi::<game::rng::ClassicRng>::new(10, 19);
+    let mut ai = ai::TetrisAi::<game::rng::ClassicRng>::new(19);
 
     c.bench_function("find best move in empty board", |b| {
         b.iter(|| ai.find_best_move());
@@ -181,5 +181,15 @@ pub fn bench_try_rot_cw_rows(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, bench_search_l);
+pub fn bench_row_no_collision(c: &mut Criterion) {
+    let board = game::row_board::RowBoard::new();
+
+    let pos = game::pieces::Piece::L.row_start_pos();
+
+    c.bench_function("try rotating L clockwise on row board", |b| {
+        b.iter(|| board.no_collision(black_box(pos)));
+    });
+}
+
+criterion_group!(benches, bench_search_row_l);
 criterion_main!(benches);

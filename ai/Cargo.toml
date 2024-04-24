@@ -7,3 +7,4 @@ edition = "2021"
 game = { path = "../game" }
 time_this = "0"
 arrayvec = "0.7"
+itertools = "0.12.1"
